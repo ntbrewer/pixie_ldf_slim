@@ -14,6 +14,7 @@
 #include <numeric>
 #include <vector>
 #include <cmath>
+#include <signal.h>
 
 #include <cstdlib>
 
@@ -143,7 +144,7 @@ int TraceAnalyzer::Analyze(const vector<int> &trace,
 
     // quick trace analysis adapted from previous scan versions in
     // the xia_trace99.f file.
-    const int baseLow = 1, baseHigh = 150;
+    const int baseLow = 1, baseHigh = 350;//caution changing parm from thos for header. ...
 
       
     StatsAccumulator statsPre = accumulate
@@ -489,7 +490,13 @@ void TraceAnalyzer::DeclarePlots() const
     DeclareHistogram1D(D_PTRACE+11, energyBins, "PSD Factor");
     DeclareHistogram1D(D_PTRACE+12, energyBins, "Trace Rise Time");
     DeclareHistogram1D(D_PTRACE+13, energyBins, "Trace Fall Time");
-    DeclareHistogram1D(D_PTRACE+14, energyBins, "Trace Return Time");
+//    DeclareHistogram1D(D_PTRACE+14, energyBins, "Trace Return Time");
+    DeclareHistogram2D(D_PTRACE+14, energyBins, energyBins, "Trace Rise vs Trace Fall Time");
+        
+    DeclareHistogram1D(D_PTRACE+15, S8, "Region Pre if NB Signal");
+    DeclareHistogram1D(D_PTRACE+16, S8, "Region Pre if NB Noise");
+
+    
 //    for (int j=0; j<50; j++ ) DeclareHistogram2D(DD_ENERGY_V_TMAX+j,SB, SC, "Trace Max vs RAW");
     
     //DeclareHistogram2D(DD_TRACEMAX_TQDC2, S9, SA, "E1 vs. 10*(TraceMax-<BL>)/E1 ", 2);
@@ -507,7 +514,7 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
 {
     using namespace dammIds::trace;
     static int r1Cnt=-1;
-    static int r2Cnt=-1;
+    //static int r2Cnt=-1;
     static int r3Cnt=-1;
     //static int r4Cnt=-1;
     //int rCnt=-1;
@@ -530,15 +537,15 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
       region+=0;
     } else
     {
-      region+=1; //64-127
+      region+=1; //1
     }
     
     if (factorPSD < 160)// && factorPSD < 300)
     {
-      region +=0; //0
+      region +=2; //2-3
     } else 
     {
-      region +=2; //1
+      region +=0; //0-1
     }
 
     /*if (traceMin > 190 && traceMin < 220)
@@ -556,7 +563,7 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
       
     if (traceMax == 4095) 
     {
-      region += 0; //0-3
+      region += 4; //4-7
       r1Cnt+=1;
       for(unsigned int i = 0; i < trace.size(); i++)
       {
@@ -565,7 +572,7 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
     }
     else
     {
-      region += 8; //4-7
+      region += 0; //0-3
       r3Cnt+=1;
       for(unsigned int i = 0; i < trace.size(); i++)
       {
@@ -594,23 +601,23 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
       region+=0;  //0-7
     } else
     {
-      region+=16; //8-15
+      region+=8; //8-15
     }
     
     if (stdDevBaselinePre <6)
     {
-      region+=0; //16-31
+      region+=0; //0-15
     } else
     {
-      region+=32; //32-63
+      region+=16; //16-31
     }
     
     if (avgBaselinePost >185)
     {
-      region+=0; //0-63
+      region+=0; //0-31
     } else
     {
-      region+=64; //63-128
+      region+=32; //32-63
     }
     
     plot(DD_RTRACE+5, (traceMax-avgBaselinePre)/4., region);
@@ -631,10 +638,101 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
       plot(D_PTRACE+11, factorPSD); 
       plot(D_PTRACE+12, (traceRise+1)*10); 
       plot(D_PTRACE+13, (traceFall+1)*10);
-      plot(D_PTRACE+14, (traceRise/traceFall +1)*10);
+//      plot(D_PTRACE+14, (traceRise/traceFall +1)*10);
     }  
     
+    plot(D_PTRACE+14,(traceRise+10)*100, (traceFall+10)*100);
+    
+    vector<double> traceClassifiers = {avgBaselinePre, stdDevBaselinePre, avgBaselinePost,
+    stdDevBaselinePost, double(traceMaxTime), double(traceMin), double(traceMinTime), avgBaseline, 
+    stdDevBaseline, factorPSD, (traceRise+1)*10, (traceFall+1)*10, (traceRise/traceFall +1)*10};
+    
+    double meanSignal=0., sigmaSignal=0., ampSignal =0.;
+    double meanNoise=0., sigmaNoise=0., ampNoise =0.;
+    double probSignal=.02, probClassifierSignal=1., probNoise=0.98, probClassifierNoise =1.;
+    for (int tcIndex =0; tcIndex < 13; tcIndex++) 
+    {
+             
+       if (tcIndex == 1 || tcIndex == 3 || tcIndex == 4 || tcIndex == 6 || //poorly classifying
+       tcIndex == 7 || tcIndex == 8 || tcIndex == 12) continue; //not independant
+       
+       
+       //cout << tcIndex << " tci ";
+       
+       probClassifierSignal = 0.;
+       probClassifierNoise = 0.;
+       
+       for (int pIndex =0; pIndex < 5; pIndex++) 
+       {
+         double tcValue = double(traceClassifiers[tcIndex]);
+         
+         meanSignal = signalVector[tcIndex][pIndex*3];
+
+         if (meanSignal != 0.) 
+         {
            
+           meanSignal /= 1000.;
+           meanSignal -= tcValue;
+           sigmaSignal = signalVector[tcIndex][pIndex*3+1]/1000.;
+           ampSignal = signalVector[tcIndex][pIndex*3+2]/1000.;
+           
+           double ratioSignal = meanSignal/sigmaSignal;
+           probClassifierSignal += exp(-(ratioSignal*ratioSignal)/2.) / 
+           (sqrt(6.28*sigmaSignal * sigmaSignal));
+               
+         //  cout <<  probClassifierSignal << " pCS "; 
+         } 
+         
+         meanNoise = noiseVector[tcIndex][pIndex*3];
+
+         if (meanNoise != 0.) 
+         {
+           
+           meanNoise /= 1000.;
+           meanNoise -= tcValue;
+           sigmaNoise = noiseVector[tcIndex][pIndex*3+1]/1000.;
+           ampNoise = noiseVector[tcIndex][pIndex*3+2]/1000.;
+           
+           double ratioNoise = meanNoise/sigmaNoise;
+           probClassifierNoise += exp(-(ratioNoise*ratioNoise)/2.) /
+           (sqrt(6.28*sigmaNoise * sigmaNoise));
+           
+          // cout <<  probClassifierNoise << " pCN ";            
+         }        
+         
+       }
+       //if (probClassifierSignal > 0.1) 
+       //{
+         probSignal *= probClassifierSignal;
+       //} else {
+       //  probSignal *= 0.1;
+       //}
+       
+       //if (probClassifierNoise > 0.1) 
+       //{
+        probNoise *= probClassifierNoise;
+       //} else {
+       //  probNoise *= 0.1;
+       //}
+      // cout << probSignal << " pS "; 
+      // cout << probNoise << " pN " << endl; 
+                         
+    }  
+    //cout << endl; 
+     
+    if (probNoise < probSignal) {
+      plot(D_PTRACE+15, region);
+    //  region = 0;
+      //cout << "signal: " << region << endl;
+      
+    } else {
+      plot(D_PTRACE+16, region);
+     // region = 1;
+      //cout << "noise: " << region << endl;
+    }
+  
+     
+        
 //APD regions        if (ratio > (7.3 * e1 - 11.17)) //Region I noise
         /*if ( abs(traceMax-850)<2) //specific for MTAS trace //(ratio > (2.37 * e1 + 8.9)) //Region I noise - KSI
         {

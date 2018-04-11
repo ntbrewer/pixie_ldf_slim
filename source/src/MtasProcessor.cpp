@@ -607,7 +607,7 @@ bool MtasProcessor::Process(RawEvent &event)
 			plot(MTAS_POSITION_ENERGY+350, totalMtasEnergy.at(0) / 10.0,sumFrontBackEnergy.at(i) / 10.0);
 		}
 		plot(MTAS_POSITION_ENERGY+355, totalMtasEnergy.at(0)/10 , siliSumEnergy /10 );
-		if (sili1Region <13 && sili2Region <13 ) 
+		if (sili1Region <12 && sili2Region <12 ) 
 		{
 		  plot(MTAS_POSITION_ENERGY+356, totalMtasEnergy.at(0)/10 , siliSumEnergy /10 );
 		}
