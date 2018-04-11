@@ -47,12 +47,10 @@
 #include "DssdProcessor.h"
 #include "SsdProcessor.h"
 #include "MtasProcessor.h"
-#include "MtasMuonProcessor.h"
 #include "GeProcessor.h"
 #include "McpProcessor.h"
 #include "MtcProcessor.h"
 #include "ScintProcessor.h"
-#include "WaveformProcessor.h"
 //#include "VandleProcessor.h"
 //#include "PulserProcessor.h"
 
