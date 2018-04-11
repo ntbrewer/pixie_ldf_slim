@@ -17,7 +17,7 @@
       SVP - Oct. '10
             Added the VandleProcessor for use with VANDLE.
             Added the PulserProcessor for use with Pulsers.
-            Added the WaveformProcessor to determine ps time resolutions.
+           
 */
 
 /*!
@@ -76,7 +76,6 @@ extern RandomPool randoms;
 */
 DetectorDriver::DetectorDriver()
 {
-//    vecProcess.push_back(new WaveformProcessor());
 //    vecProcess.push_back(new ScintProcessor());
 //    vecProcess.push_back(new GeProcessor());
 //    vecProcess.push_back(new McpProcessor());    

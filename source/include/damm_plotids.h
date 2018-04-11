@@ -121,10 +121,6 @@ namespace dammIds {
 	const int DD_TDIFFVSCORCORTOF = 2470;
 	const int DD_TQDCAVEVSCORTOF  = 2510;
     }//vandle namespace
-    namespace waveformprocessor{
-	const int D_DISCRIM     = 5100;
-	const int DD_NGVSE      = 5101;
-    } // waveformprocessor namespace
     namespace pulserprocessor{ //in PulserProcessor.cpp 
 	const int D_TIMEDIFF     = 5000;
 	const int D_PROBLEMSTUFF = 5001;
@@ -176,8 +172,8 @@ namespace dammIds {
 	const int MTAS_EVO_NOLOGIC = 3600;
 	const int MTAS_LIGHTPULSER_EVO = 3700;
 	const int MTAS_REFERENCE_EVO = 3800;
-	//For MtasMuonProcessor 1D (4000-4299) 
-	const int MTAS_TOTAL = 4000;
+	//For MtasMuonProcessor 1D (4000-4299) //keeping incase we want to rename things.
+	/*const int MTAS_TOTAL = 4000;
 	const int MTAS_CENTRAL = 4001;
 	const int MTAS_INNER = 4002;
 	const int MTAS_MIDDLE = 4003;
@@ -232,7 +228,7 @@ namespace dammIds {
 	const int MTAS_PREV_TMULT_V_E = 4311;
 	const int MTAS_CURR_IMULT_V_E = 4312;
 	const int MTAS_CURR_MOMULT_V_E = 4313;
-	const int MTAS_CURR_IDE_V_E = 4314;
+	const int MTAS_CURR_IDE_V_E = 4314;*/
 
     } // mtas namespace
 
