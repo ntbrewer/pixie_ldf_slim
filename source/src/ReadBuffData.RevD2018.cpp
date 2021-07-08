@@ -108,6 +108,8 @@ int ReadBuffData(word_t *buf, unsigned long *bufLen,
   
   //cout << "buf[0] , mod" << buf[0] << " , " << modNum << endl;
   
+ if (modNum != 5)
+ {  
   if( *bufLen > 0 ) { // check if the buffer has data
     if (*bufLen == 2) {
       // this is an empty channel
@@ -152,7 +154,7 @@ Remodified (NTB) to use interpret saturated and pileup bits
       {
         outfile.open("headerandsums.FA3.txt", std::ofstream::out | std::ofstream::app);
         outfile << "    MOD:CHAN " << modNum << ":" << chanNum;
-        for(word_t j=0;j<headerLength; j++) 
+        for(int j=0;j<headerLength; j++) 
         {
           outfile << "h" << j << ": " << buf[j];
         }
@@ -189,7 +191,7 @@ Remodified (NTB) to use interpret saturated and pileup bits
       word_t cfdTime     = ((buf[2] & 0x7FFF0000) >> 16)/32768; //(NTB)
       //cout << cfdTime << " =? " << ((buf[2] & 0x7FFF0000) >> 31) << endl; //(NTB)
      //adjusted by xia for 14bit allowance. so our 12bit is written too high. (NTB)
-      //word_t cfdForcedTrig = (buf[2] & 0x80000000) >> 31; //new NTB unused in out implementation
+      word_t cfdForcedTrig = (buf[2] & 0x80000000) >> 31; //new NTB
 
       word_t energy      = buf[3] & 0x00007FFF;//changed NTB
       word_t traceFlag = (buf[3] & 0x00008000) >> 15; //new
@@ -262,7 +264,7 @@ Remodified (NTB) to use interpret saturated and pileup bits
       eventList.push_back(currentEvt);
 
       numEvents++;
-    } while ( buf < bufStart + *bufLen ); //?? NTB
+    } while ( buf < bufStart + *bufLen );
   } else {// if buffer has data
     cout << "ERROR BufNData " << *bufLen << endl;
     cout << "ERROR IN ReadBuffData" << endl;
@@ -271,4 +273,145 @@ Remodified (NTB) to use interpret saturated and pileup bits
   }
   
   return numEvents;
-} //end ReadBuffData
+ } else {
+  if( *bufLen > 0 ) { // check if the buffer has data
+    if (*bufLen == 2) {
+      // this is an empty channel
+      return 0;
+    }
+    do {
+      ChanEvent *currentEvt = new ChanEvent;
+      //cout << "detsub" << currentEvt->GetChanID().GetSubtype() << endl;
+      // decoding event data... see pixie16app.c
+      // buf points to the start of channel data
+      word_t chanNum      = (buf[0] & 0x0000000F);
+      word_t slotNum      = (buf[0] & 0x000000F0) >> 4;
+      word_t crateNum     = (buf[0] & 0x00000F00) >> 8;
+      word_t headerLength = (buf[0] & 0x0001F000) >> 12;
+
+      word_t eventLength  = (buf[0] & 0x7FFE0000) >> 17; // Event Length now in [30:17]
+      word_t finishCode   = (buf[0] & 0x80000000) >> 31;
+
+      //currentEvt->virtualChannel = ((buf[0] & 0x20000000) != 0);
+      //currentEvt->saturatedBit   = ((buf[0] & 0x40000000) != 0);
+      currentEvt->pileupBit      = (finishCode != 0); //!!!(NTB) should be modified to match Manual ie Pileup to FinishCode throughout but this is a major job. TBD. 
+
+/*      // MODIFIED to ignore saturated bit (DTM)
+      //      word_t eventLength  = (buf[0] & 0x7FFE0000) >> 17;
+      word_t eventLength  = (buf[0] & 0x3FFE0000) >> 17;
+      word_t finishCode   = (buf[0] & 0x80000000) >> 31;
+Remodified (NTB) to use interpret saturated and pileup bits
+*/
+      // Rev. D header lengths not clearly defined in pixie16app_defs
+      //! magic numbers here for now
+      // make some sanity checks
+      if (headerLength == stats.headerLength) {
+	// this is a manual statistics block inserted by the poll program
+	stats.DoStatisticsBlock(&buf[1], modNum);
+	buf += eventLength;
+	numEvents = readbuff::STATS;
+	continue;
+      }
+      if (headerLength != 4 && headerLength != 8 &&
+	  headerLength != 12 && headerLength != 16) { // (NTB) not sure if this (8,12,16) is appropriate for this version of the pixie cards. 
+	cout << "  Unexpected header length: " << headerLength << endl;
+	cout << "    Buffer " << modNum << " of length " << *bufLen << endl;
+	cout << "    CHAN:SLOT:CRATE " 
+	     << chanNum << ":" << slotNum << ":" << crateNum << endl;
+	// advance to next event and continue
+	// buf += EventLength;
+	// continue;
+
+	// skip the rest of this buffer (nope, NTB)
+	return numEvents;
+    //(NTB) return readbuff::ERROR;
+      }
+
+      word_t lowTime     = buf[1];//ok
+
+      word_t highTime    = buf[2] & 0x0000FFFF;//ok
+      word_t cfdTime     = ((buf[2] & 0x7FFF0000) >> 31); //(NTB)
+      //cout << cfdTime << " =? " << ((buf[2] & 0x7FFF0000) >> 31) << endl; //(NTB)
+     //adjusted by xia for 14bit allowance. Changed from previous. (NTB) 
+      word_t cfdForcedTrig = (buf[2] & 0x80000000) >> 31; //new NTB
+
+      word_t energy      = buf[3] & 0x0000FFFF;//changed NTB
+      word_t traceLength = (buf[3] & 0x7FFF0000) >> 16; //ok
+      word_t flag_alt = (buf[3] & 0x40000000) >> 30; 
+      word_t traceFlag = (buf[3] & 0x80000000) >> 31; //new NTB
+      /*if ( chanNum ==15 && modNum==4) {
+      //if (traceFlag != 0 && chanNum ==15 && modNum==4) {
+        cout << " Energy 15bit = " << energy << " 16bit = " << energy_alt << " ." << endl;
+        cout << " traceFlag = " << traceFlag << "." << endl; 
+      }*/
+      // one last sanity check
+      //
+      if (traceFlag) {
+	      buf += eventLength;
+          continue;
+      }
+      if ( traceLength / 2 + headerLength != eventLength ) {
+	cout << "  Bad event length (" << eventLength
+	     << ") does not correspond with length of header (" << headerLength
+	     << ") and length of trace (" << traceLength << ")" << endl;
+	               cout << "slot:chan:mod " << slotNum <<":"<< chanNum <<":"<< modNum << " energy " << energy << " Sat. " << traceFlag << " tLen " << traceLength << " hLen " << headerLength << " eLen " << eventLength 
+          << " Pileup " << finishCode << " extra " << flag_alt << endl;
+	buf += eventLength;
+	continue;
+      }
+
+      // handle multiple crates
+      modNum += 100 * crateNum;
+      //TBD pass new vars to currentEvt and process as necessary
+      currentEvt->chanNum = chanNum;
+      currentEvt->modNum = modNum;
+      currentEvt->energy = energy;
+      currentEvt->trigTime = lowTime;
+      currentEvt->cfdTime  = cfdTime;
+      currentEvt->eventTimeHi = highTime;
+      currentEvt->eventTimeLo = lowTime;
+      currentEvt->time = highTime * HIGH_MULT + lowTime;//should also have + cfdTime??
+      //Do I need to check CFDForced = 1 -> cfdTime == 0??
+      //For checking syncronization
+       /*if (chanNum == 15) {
+      cout << "sync check. " << endl;
+      cout << "chanNum " << chanNum << " modNum " << modNum << " energy " << energy << " time " << highTime * HIGH_MULT + lowTime << endl;
+      }*/
+      /*if (traceLength !=0) 
+      {
+          cout << "slot:chan:mod " << slotNum <<":"<< chanNum <<":"<< modNum << " hLen " << headerLength << " eLen " << eventLength << " Pileup " << finishCode << " w3 " << buf[3] << endl;
+//          cout << "hw " << headerWords[0] << " , " << headerWords[1] << " , " << headerWords[2] << " , " << headerWords[3] << " , " << endl;
+
+      }*/
+      buf += headerLength;
+      /* Check if trace data follows the channel header */
+      if ( traceLength > 0 ) {
+	// sbuf points to the beginning of trace data
+	halfword_t *sbuf = (halfword_t *)buf; 
+	currentEvt->trace.reserve(traceLength); //NTB
+	
+	/*if(currentEvt->saturatedBit)
+	  currentEvt->trace.SetTraceInfo("saturation", 1); //NTB*/
+
+	// Read the trace data (2-bytes per sample, i.e. 2 samples per word)
+	for(unsigned int k = 0; k < traceLength; k ++) {
+	  currentEvt->trace.push_back(sbuf[k]);
+	}
+	buf += traceLength / 2;
+      }
+      eventList.push_back(currentEvt);
+
+      numEvents++;
+    } while ( buf < bufStart + *bufLen );
+  } else {// if buffer has data
+    cout << "ERROR BufNData " << *bufLen << endl;
+    cout << "ERROR IN ReadBuffData" << endl;
+    cout << "LIST UNKNOWN" << endl;
+    return readbuff::ERROR;
+  }
+  
+  return numEvents;
+ 
+ }
+}
+

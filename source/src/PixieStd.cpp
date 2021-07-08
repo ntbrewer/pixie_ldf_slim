@@ -206,10 +206,10 @@ extern "C" void hissub_(unsigned short *sbuf[],unsigned short *nhw)
 		    spillValidCount++;
 		    bufInSpill = 0; dataWords = 0; lastBuf = -1;
 		} else if (bufNum == 0) {
-//		    cout << "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-//			 << "  INCOMPLETE BUFFER " << spillInvalidCount++ 
-//			 << "\n  " << spillValidCount << " valid spills so far."
-//			 << " Starting fresh spill." << endl;
+//		    cout << "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE" //NTB this is annoying.
+			 cout << "  INCOMPLETE BUFFER " << spillInvalidCount++ 
+			 << "\n  " << spillValidCount << " valid spills so far."
+			 << " Starting fresh spill." << endl;
 		    // throw away previous collected data and start fresh
 		    bufInSpill = 0; dataWords = 0; lastBuf = -1;
 		}
@@ -256,14 +256,14 @@ extern "C" void hissub_(unsigned short *sbuf[],unsigned short *nhw)
 
 	/* make sure we retrieved all the chunks of the spill */
 	if (bufInSpill != totBuf) {
-//	    cout << "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE  INCOMPLETE BUFFER "
-//		 << spillInvalidCount++ 
-//		 << "\n I/B [  " << bufInSpill << " of " << totBuf << " : pos " << totWords 
-//		 << "    " << spillValidCount << " total spills"
-//		 << "\n| " << hex << buf[0] << " " << buf[1] << "  " 
-//		 << buf[2] << " " << buf[3]
-//		 << "\n| " << dec << buf[totWords] << " " << buf[totWords+1] << "  "
-//		 << buf[totWords+2] << " " << buf[totWords+3] << endl;
+//	    cout << "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE  INCOMPLETE BUFFER " //consider verbose toggle
+		 cout << "Incomplete Buffer " << spillInvalidCount++ 
+		 << "\n I/B [  " << bufInSpill << " of " << totBuf << " : pos " << totWords 
+		 << "    " << spillValidCount << " total spills"
+		 << "\n| " << hex << buf[0] << " " << buf[1] << "  " 
+		 << buf[2] << " " << buf[3]
+		 << "\n| " << dec << buf[totWords] << " " << buf[totWords+1] << "  "
+		 << buf[totWords+2] << " " << buf[totWords+3] << endl;
 	} else {
 	    spillValidCount++;
 	    MakeModuleData(totData, dataWords);	    

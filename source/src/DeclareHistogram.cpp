@@ -75,7 +75,6 @@ extern "C" void drrsub_(unsigned int& iexist)
     // unfortunately this function is called before we have read in the map,
     //   and know the EXACT number of channels we'll need
     const int numberChannels = 96;
-    const int stripsDSSD = 40;
 
     extern DetectorDriver driver;
 
@@ -91,11 +90,6 @@ extern "C" void drrsub_(unsigned int& iexist)
         DeclareHistogram1D(offsets::D_CAL_ENERGY+i,SE,"Channel Cal. Energy");	    
     }
     
-    // not needed for MTAS, Jan '12, DTM
-    //for (int i=0; i < stripsDSSD; i++) {
-	//DeclareHistogram1D(offsets::D_FRONT_STRIP + i, SE, "dssd front");
-	//DeclareHistogram1D(offsets::D_BACK_STRIP + i, SE, "dssd back");
-    //}
 
     DeclareHistogram1D(D_HIT_SPECTRUM, S7, "channel hit spectrum");
     DeclareHistogram1D(D_SUBEVENT_GAP, SE, "time btwn chan-in event,10ns bin");

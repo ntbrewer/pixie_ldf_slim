@@ -647,8 +647,8 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
     stdDevBaselinePost, double(traceMaxTime), double(traceMin), double(traceMinTime), avgBaseline, 
     stdDevBaseline, factorPSD, (traceRise+1)*10, (traceFall+1)*10, (traceRise/traceFall +1)*10};
     
-    double meanSignal=0., sigmaSignal=0., ampSignal =0.;
-    double meanNoise=0., sigmaNoise=0., ampNoise =0.;
+    double meanSignal=0., sigmaSignal=0.;  //, ampSignal =0.;
+    double meanNoise=0., sigmaNoise=0.;  //, ampNoise =0.;
     double probSignal=.02, probClassifierSignal=1., probNoise=0.98, probClassifierNoise =1.;
     for (int tcIndex =0; tcIndex < 13; tcIndex++) 
     {
@@ -674,7 +674,7 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
            meanSignal /= 1000.;
            meanSignal -= tcValue;
            sigmaSignal = signalVector[tcIndex][pIndex*3+1]/1000.;
-           ampSignal = signalVector[tcIndex][pIndex*3+2]/1000.;
+          // ampSignal = signalVector[tcIndex][pIndex*3+2]/1000.;
            
            double ratioSignal = meanSignal/sigmaSignal;
            probClassifierSignal += exp(-(ratioSignal*ratioSignal)/2.) / 
@@ -691,7 +691,7 @@ void TraceAnalyzer::TracePlot(const vector<int> &trace)
            meanNoise /= 1000.;
            meanNoise -= tcValue;
            sigmaNoise = noiseVector[tcIndex][pIndex*3+1]/1000.;
-           ampNoise = noiseVector[tcIndex][pIndex*3+2]/1000.;
+           //ampNoise = noiseVector[tcIndex][pIndex*3+2]/1000.;
            
            double ratioNoise = meanNoise/sigmaNoise;
            probClassifierNoise += exp(-(ratioNoise*ratioNoise)/2.) /

@@ -28,7 +28,7 @@ void SsdProcessor::DeclarePlots(void) const
 
     const int EnergyBins = SE; 
     const int positionBins = S4;
-    const int timeBins     = S8;
+    //const int timeBins     = S8; NTB Not used
 
        DeclareHistogram2D(SSD1_POSITION_ENERGY, 
     		       EnergyBins, positionBins, "SSD1 Strip vs E - RF");
@@ -51,7 +51,7 @@ bool SsdProcessor::Process(RawEvent &event)
     //   static Correlator &corr = event.GetCorrelator();
 
     int ssdPos = UINT_MAX;
-    double ssdEnergy, ssdTime = 0.;
+    double ssdEnergy;//, ssdTime = 0.; NTB Not used
     string ssdSubtype="";
 
     bool hasSsd = ssdSummary && (ssdSummary->GetMult() > 0);
@@ -68,7 +68,7 @@ bool SsdProcessor::Process(RawEvent &event)
       	ssdPos    = ch->GetChanID().GetLocation();
 	//	cout <<" TST " <<ssdSubtype << ssdPos <<endl;
 	ssdEnergy = ch->GetCalEnergy();
-	ssdTime   = ch->GetTime();
+	//ssdTime   = ch->GetTime(); NTB Not used
     } else ssdEnergy = 0.;
 
     // plot stuff
